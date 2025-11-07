@@ -22,10 +22,22 @@ const EInvalidTimestamp: vector<u8> = b"Invalid timestamp";
 #[error]
 const EInvalidAllowUpdateTimestamp: vector<u8> = b"Invalid allow update timestamp";
 
+#[error]
+const EInvalidCodeExtension: vector<u8> = b"Invalid code extension";
+
+#[error]
+const EInvalidReturnType: vector<u8> = b"Invalid return type";
+
 public enum CodeExtension has store {
-    CPP,
-    RUST,
-    TYPESCRIPT,
+    PYTHON,
+}
+
+public enum ReturnType has copy, drop, store {
+    STRING,
+    BOOLEAN,
+    NUMBER,
+    VECTOR,
+    EMPTY,
 }
 
 public enum Result has copy, drop, store {
@@ -47,15 +59,23 @@ public struct OracleFeed has key, store {
     object_id: ID,
     extension: CodeExtension,
     result: Result,
+    return_type: ReturnType,
     allow_update_timestamp_ms: u64,
 }
 
-public fun new(object_id: ID, extension: CodeExtension, allow_update_timestamp_ms: u64, ctx: &mut TxContext) {
+public fun new(
+    object_id: ID,
+    extension: CodeExtension,
+    return_type: ReturnType,
+    allow_update_timestamp_ms: u64,
+    ctx: &mut TxContext
+) {
     let feed = OracleFeed {
         id: object::new(ctx),
-        object_id, 
+        object_id,
         extension,
         result: Result::EMPTY,
+        return_type,
         allow_update_timestamp_ms,
     };
     transfer::share_object(feed);
@@ -92,6 +112,24 @@ public fun construct_vector_result(result: vector<u8>): Result {
     Result::VECTOR(result)
 }
 
+public fun construct_code_extension(extension: vector<u8>): CodeExtension {
+    match (extension) {
+        b"python" => CodeExtension::PYTHON,
+        _ => abort EInvalidCodeExtension
+    }
+}
+
+public fun construct_return_type(type_bytes: vector<u8>): ReturnType {
+    match (type_bytes) {
+        b"string" => ReturnType::STRING,
+        b"boolean" => ReturnType::BOOLEAN,
+        b"number" => ReturnType::NUMBER,
+        b"vector" => ReturnType::VECTOR,
+        b"empty" => ReturnType::EMPTY,
+        _ => abort EInvalidReturnType
+    }
+}
+
 public fun construct_payload(intent_scope: u8, timestamp_ms: u64, result: Result): Payload {
     Payload {
         intent_scope,
@@ -99,3 +137,4 @@ public fun construct_payload(intent_scope: u8, timestamp_ms: u64, result: Result
         result,
     }
 }
+
