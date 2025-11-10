@@ -57,7 +57,7 @@ public struct Payload has copy, drop, store {
 
 public struct OracleFeed has key, store {
     id: UID,
-    object_id: ID,
+    blob_id: u256,
     extension: CodeExtension,
     result: Option<Result>,
     return_type: ReturnType,
@@ -65,7 +65,7 @@ public struct OracleFeed has key, store {
 }
 
 public fun new(
-    object_id: ID,
+    blob_id: u256,
     extension: CodeExtension,
     return_type: ReturnType,
     allow_update_timestamp_ms: u64,
@@ -73,7 +73,7 @@ public fun new(
 ) {
     let feed = OracleFeed {
         id: object::new(ctx),
-        object_id,
+        blob_id,
         extension,
         result: option::none(),
         return_type,
