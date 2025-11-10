@@ -9,9 +9,9 @@ module oracle::oracle;
 module oracle::feed;
 
 use enclave::enclave::Enclave;
+use oracle::config::Config;
 use std::string::String;
 use sui::clock::Clock;
-use oracle::config::Config;
 
 #[error]
 const EInvalidSignature: vector<u8> = b"Invalid signature";
@@ -28,6 +28,9 @@ const EInvalidCodeExtension: vector<u8> = b"Invalid code extension";
 #[error]
 const EInvalidReturnType: vector<u8> = b"Invalid return type";
 
+#[error]
+const EInvalidResult: vector<u8> = b"Invalid result";
+
 public enum CodeExtension has store {
     PYTHON,
 }
@@ -37,7 +40,6 @@ public enum ReturnType has copy, drop, store {
     BOOLEAN,
     NUMBER,
     VECTOR,
-    EMPTY,
 }
 
 public enum Result has copy, drop, store {
@@ -45,20 +47,19 @@ public enum Result has copy, drop, store {
     BOOLEAN(bool),
     NUMBER(u64),
     VECTOR(vector<u8>),
-    EMPTY,
 }
 
 public struct Payload has copy, drop, store {
     intent_scope: u8,
     timestamp_ms: u64,
-    result: Result,
+    result: Option<Result>,
 }
 
 public struct OracleFeed has key, store {
     id: UID,
     object_id: ID,
     extension: CodeExtension,
-    result: Result,
+    result: Option<Result>,
     return_type: ReturnType,
     allow_update_timestamp_ms: u64,
 }
@@ -68,13 +69,13 @@ public fun new(
     extension: CodeExtension,
     return_type: ReturnType,
     allow_update_timestamp_ms: u64,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ) {
     let feed = OracleFeed {
         id: object::new(ctx),
         object_id,
         extension,
-        result: Result::EMPTY,
+        result: option::none(),
         return_type,
         allow_update_timestamp_ms,
     };
@@ -89,9 +90,19 @@ public fun submit_result<T>(
     feed: &mut OracleFeed,
     clock: &mut Clock,
 ) {
-    assert!(clock.timestamp_ms() - payload.timestamp_ms <= config.get_max_update_time_ms(), EInvalidTimestamp);
+    assert!(
+        clock.timestamp_ms() - payload.timestamp_ms <= config.get_max_update_time_ms(),
+        EInvalidTimestamp,
+    );
     assert!(clock.timestamp_ms() >= feed.allow_update_timestamp_ms, EInvalidAllowUpdateTimestamp);
-    let verify_result = enclave.verify_signature<T, Payload>(payload.intent_scope, payload.timestamp_ms, payload, signature);
+    assert!(payload.result.is_some(), EInvalidResult);
+    assert!(feed.result.is_some(), EInvalidResult);
+    let verify_result = enclave.verify_signature<T, Payload>(
+        payload.intent_scope,
+        payload.timestamp_ms,
+        payload,
+        signature,
+    );
     assert!(verify_result, EInvalidSignature);
     feed.result = payload.result;
 }
@@ -115,7 +126,7 @@ public fun construct_vector_result(result: vector<u8>): Result {
 public fun construct_code_extension(extension: vector<u8>): CodeExtension {
     match (extension) {
         b"python" => CodeExtension::PYTHON,
-        _ => abort EInvalidCodeExtension
+        _ => abort EInvalidCodeExtension,
     }
 }
 
@@ -125,8 +136,7 @@ public fun construct_return_type(type_bytes: vector<u8>): ReturnType {
         b"boolean" => ReturnType::BOOLEAN,
         b"number" => ReturnType::NUMBER,
         b"vector" => ReturnType::VECTOR,
-        b"empty" => ReturnType::EMPTY,
-        _ => abort EInvalidReturnType
+        _ => abort EInvalidReturnType,
     }
 }
 
@@ -134,7 +144,58 @@ public fun construct_payload(intent_scope: u8, timestamp_ms: u64, result: Result
     Payload {
         intent_scope,
         timestamp_ms,
-        result,
+        result: option::some(result),
     }
 }
 
+public fun get_result(feed: &OracleFeed): Option<Result> {
+    feed.result
+}
+
+public fun extract_u64_result(result: Result): u64 {
+    match (result) {
+        Result::NUMBER(number) => number,
+        _ => abort EInvalidResult,
+    }
+}
+
+public fun extract_boolean_result(result: Result): bool {
+    match (result) {
+        Result::BOOLEAN(boolean) => boolean,
+        _ => abort EInvalidResult,
+    }
+}
+
+public fun extract_string_result(result: Result): String {
+    match (result) {
+        Result::STRING(string) => string,
+        _ => abort EInvalidResult,
+    }
+}
+
+public fun extract_vector_result(result: Result): vector<u8> {
+    match (result) {
+        Result::VECTOR(vector) => vector,
+        _ => abort EInvalidResult,
+    }
+}
+
+public fun is_u64_result_type(return_type: ReturnType): bool {
+    return_type == ReturnType::NUMBER
+}
+
+public fun is_boolean_result_type(return_type: ReturnType): bool {
+    return_type == ReturnType::BOOLEAN
+}
+
+public fun is_string_result_type(return_type: ReturnType): bool {
+    return_type == ReturnType::STRING
+}
+
+public fun is_vector_result_type(return_type: ReturnType): bool {
+    return_type == ReturnType::VECTOR
+}
+
+public fun return_type(feed: &OracleFeed): ReturnType {
+    feed.return_type
+}
