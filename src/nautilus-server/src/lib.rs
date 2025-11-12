@@ -6,6 +6,7 @@ use axum::response::IntoResponse;
 use axum::response::Response;
 use axum::Json;
 use fastcrypto::ed25519::Ed25519KeyPair;
+use fastcrypto::ed25519::Ed25519PrivateKey;
 use serde_json::json;
 use sui_rpc::client::v2::Client;
 use std::fmt;
@@ -46,7 +47,6 @@ pub mod common;
 
 /// App state, at minimum needs to maintain the ephemeral keypair.  
 pub struct AppState {
-    /// Ephemeral keypair on boot
     pub eph_kp: Ed25519KeyPair,
 
     pub sui_client: Client,

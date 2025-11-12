@@ -38,10 +38,13 @@ sui-crypto = { git = "https://github.com/mystenlabs/sui-rust-sdk", features = [
 seal-sdk = { git = "https://github.com/MystenLabs/seal", rev = "608d30caba1d1fbf5f1d82e5a8e6280010fd3609", package = "seal-sdk", optional = true }
 sui-rpc = "0.0.8"
 pyo3 = { version = "0.22", features = ["auto-initialize"] }
+bech32 = "0.11.0"
+hex = "0.4.3"
+dotenv = "0.15"
 
 [features]
 default = ["coeus-oracle"]
 weather-example = []
 twitter-example = ["regex"]
 seal-example = ["sui-crypto", "seal-sdk"]
-coeus-oracle = []
+coeus-oracle = ["sui-crypto"]

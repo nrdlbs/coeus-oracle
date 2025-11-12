@@ -343,13 +343,6 @@ pub async fn process_data(
         .map_err(|e| EnclaveError::GenericError(format!("Failed to get current timestamp: {}", e)))?
         .as_millis() as u64;
 
-    println!("oracle_feed: {:?}", oracle_feed);
-    // if oracle_feed.allow_update_timestamp_ms > timestamp_ms {
-    //     return Err(EnclaveError::GenericError(
-    //         "Oracle feed is not allowed to be updated".to_string(),
-    //     ));
-    // }
-
     let url = Url::parse(&format!(
         "https://aggregator.walrus-testnet.walrus.space/v1/blobs/{}",
         oracle_feed.blob_id
