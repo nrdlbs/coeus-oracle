@@ -7,6 +7,7 @@ use axum::response::Response;
 use axum::Json;
 use fastcrypto::ed25519::Ed25519KeyPair;
 use serde_json::json;
+use sui_rpc::client::v2::Client;
 use std::fmt;
 
 mod apps {
@@ -21,6 +22,10 @@ mod apps {
     #[cfg(feature = "seal-example")]
     #[path = "seal-example/mod.rs"]
     pub mod seal_example;
+
+    #[cfg(feature = "coeus-oracle")]
+    #[path = "coeus-oracle/mod.rs"]
+    pub mod coeus_oracle;
 }
 
 pub mod app {
@@ -32,6 +37,9 @@ pub mod app {
 
     #[cfg(feature = "seal-example")]
     pub use crate::apps::seal_example::*;
+
+    #[cfg(feature = "coeus-oracle")]
+    pub use crate::apps::coeus_oracle::*;
 }
 
 pub mod common;
@@ -40,8 +48,8 @@ pub mod common;
 pub struct AppState {
     /// Ephemeral keypair on boot
     pub eph_kp: Ed25519KeyPair,
-    /// API key when querying api.weatherapi.com
-    pub api_key: String,
+
+    pub sui_client: Client,
 }
 
 /// Implement IntoResponse for EnclaveError.

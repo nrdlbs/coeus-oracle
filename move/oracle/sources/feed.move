@@ -31,6 +31,9 @@ const EInvalidReturnType: vector<u8> = b"Invalid return type";
 #[error]
 const EInvalidResult: vector<u8> = b"Invalid result";
 
+#[error]
+const EInvalidReceipt: vector<u8> = b"Invalid receipt";
+
 public enum CodeExtension has store {
     PYTHON,
 }
@@ -55,9 +58,13 @@ public struct Payload has copy, drop, store {
     result: Option<Result>,
 }
 
+public struct NewOracleFeedReceipt {
+    id: ID,
+}
+
 public struct OracleFeed has key, store {
     id: UID,
-    blob_id: u256,
+    blob_id: String,
     extension: CodeExtension,
     result: Option<Result>,
     return_type: ReturnType,
@@ -65,12 +72,12 @@ public struct OracleFeed has key, store {
 }
 
 public fun new(
-    blob_id: u256,
+    blob_id: String,
     extension: CodeExtension,
     return_type: ReturnType,
     allow_update_timestamp_ms: u64,
     ctx: &mut TxContext,
-) {
+): (OracleFeed, NewOracleFeedReceipt) {
     let feed = OracleFeed {
         id: object::new(ctx),
         blob_id,
@@ -79,6 +86,13 @@ public fun new(
         return_type,
         allow_update_timestamp_ms,
     };
+    let receipt = NewOracleFeedReceipt { id: object::id(&feed) };
+    (feed, receipt)
+}
+
+public fun repay(feed: OracleFeed, receipt: NewOracleFeedReceipt) {
+    let NewOracleFeedReceipt { id } = receipt;
+    assert!(object::id(&feed) == id, EInvalidReceipt);
     transfer::share_object(feed);
 }
 
