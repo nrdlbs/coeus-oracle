@@ -1,7 +1,11 @@
 module oracle::config;
 
+use enclave::enclave::{Cap, Self};
+
 #[error]
 const ENotAdmin: vector<u8> = b"Not admin";
+
+public struct CONFIG has drop {}
 
 public struct Config has key, store {
     id: UID,
@@ -9,12 +13,14 @@ public struct Config has key, store {
     admin: address,
 }
 
-fun init(ctx: &mut TxContext) {
+fun init(otw: CONFIG, ctx: &mut TxContext) {
     let config = Config {
         id: object::new(ctx),
         max_update_time_ms: 1000,
         admin: ctx.sender(),
     };
+    let cap = enclave::new_cap(otw, ctx);
+    transfer::public_transfer(cap, ctx.sender());
     transfer::share_object(config);
 }
 
