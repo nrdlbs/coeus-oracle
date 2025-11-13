@@ -8,7 +8,7 @@ use axum::Json;
 use fastcrypto::ed25519::Ed25519KeyPair;
 use fastcrypto::ed25519::Ed25519PrivateKey;
 use serde_json::json;
-use sui_rpc::client::v2::Client;
+use sui_rpc::client::Client;
 use std::fmt;
 
 mod apps {

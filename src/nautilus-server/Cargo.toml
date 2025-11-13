@@ -1,7 +1,7 @@
 [package]
 name = "nautilus-server"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 authors = ["Mysten Labs <build@mystenlabs.com>"]
 license = "Apache-2.0"
 repository = "https://github.com/MystenLabs/nautilus"
@@ -31,16 +31,15 @@ lazy_static = "1.4"
 uuid = { version = "1.0", features = ["v4"] }
 regex = { version = "1.5", optional = true }
 
-sui-sdk-types = { git = "https://github.com/mystenlabs/sui-rust-sdk", rev = "86a9e06" }
+sui-sdk-types = { git = "https://github.com/mystenlabs/sui-rust-sdk", branch = "master" }
 sui-crypto = { git = "https://github.com/mystenlabs/sui-rust-sdk", features = [
     "ed25519",
-], rev = "86a9e06", optional = true }
+], branch = "master", optional = true }
 seal-sdk = { git = "https://github.com/MystenLabs/seal", rev = "608d30caba1d1fbf5f1d82e5a8e6280010fd3609", package = "seal-sdk", optional = true }
-sui-rpc = "0.0.8"
+sui-rpc = { git = "https://github.com/MystenLabs/sui-rust-sdk", branch = "master" }
 pyo3 = { version = "0.22", features = ["auto-initialize"] }
 bech32 = "0.11.0"
 hex = "0.4.3"
-dotenv = "0.15"
 
 [features]
 default = ["coeus-oracle"]

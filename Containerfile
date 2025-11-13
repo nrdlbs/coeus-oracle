@@ -9,9 +9,10 @@ FROM stagex/core-ca-certificates@sha256:d6fca6c0080e8e5360cd85fc1c4bd3eab71ce626
 FROM stagex/core-gcc@sha256:125bd6306e7f37e57d377d5a189c0e499388aff42b22cc79acee6097357c617f AS core-gcc
 FROM stagex/core-git@sha256:5b0ce8741532026bb7e6f2302855a93057a27a7f38e596e9a7fb0e782f04d0f6 AS core-git
 FROM stagex/core-zlib@sha256:b35b643642153b1620093cfe2963f5fa8e4d194fb2344a5786da5717018976c2 AS core-zlib
-FROM stagex/core-llvm@sha256:bc1c6d67aa73a96dd92f5def7e2701de78b0639d0c815d69110fbb9b3b3e85fe AS core-llvm
-FROM stagex/core-openssl@sha256:8670a22fb76965f31bda1b61cd75ae39a96e1008deffe289a5d94ee4337b1cb2 AS core-openssl
-FROM stagex/core-rust@sha256:9be04ac253dabe11367336d29a1582a25535876a1b68fb9508ac85e898d812fd AS core-rust
+FROM stagex/core-llvm:latest AS core-llvm
+FROM stagex/core-openssl:latest AS core-openssl
+FROM stagex/core-rust:latest AS core-rust
+FROM stagex/core-libffi:latest AS core-libffi
 FROM stagex/core-musl@sha256:d5f86324920cfc7fc34f0163502784b73161543ba0a312030a3ddff3ef8ab2f8 AS core-musl
 FROM stagex/core-libunwind@sha256:4f3ead61255c1e58e7dc43a33043f297f8730ec88e068a4460e5fff09e503781 AS core-libunwind
 FROM stagex/core-pkgconf@sha256:fb69c51519edd6aa8e889877b48d2b6874bc5756f72d412908dc629842c46b4a AS core-pkgconf
@@ -45,6 +46,7 @@ COPY --from=core-rust . /
 COPY --from=user-gen_initramfs . /
 COPY --from=user-eif_build . /
 COPY --from=core-llvm . /
+COPY --from=core-libffi . /
 COPY --from=core-gcc . /
 COPY --from=user-cpio . /
 COPY --from=core-python . /

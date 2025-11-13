@@ -11,7 +11,7 @@ use nautilus_server::app::process_data;
 use nautilus_server::common::{get_attestation, health_check};
 use nautilus_server::AppState;
 use std::sync::Arc;
-use sui_rpc::client::v2::Client;
+use sui_rpc::client::Client;
 use tower_http::cors::{Any, CorsLayer};
 use tracing::info;
 
