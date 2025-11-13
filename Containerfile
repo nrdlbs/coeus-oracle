@@ -47,6 +47,7 @@ COPY --from=user-eif_build . /
 COPY --from=core-llvm . /
 COPY --from=core-gcc . /
 COPY --from=user-cpio . /
+COPY --from=core-python . /
 COPY --from=user-linux-nitro /bzImage .
 COPY --from=user-linux-nitro /nsm.ko .
 COPY --from=user-linux-nitro /linux.config .
@@ -95,12 +96,12 @@ EOF
 
 WORKDIR /build_eif
 RUN eif_build \
-	--kernel /bzImage \
-	--kernel_config /linux.config \
-	--ramdisk /build_cpio/rootfs.cpio \
-	--pcrs_output /nitro.pcrs \
-	--output /nitro.eif \
-	--cmdline 'reboot=k initrd=0x2000000,3228672 root=/dev/ram0 panic=1 pci=off nomodules console=ttyS0 i8042.noaux i8042.nomux i8042.nopnp i8042.dumbkbd'
+    --kernel /bzImage \
+    --kernel_config /linux.config \
+    --ramdisk /build_cpio/rootfs.cpio \
+    --pcrs_output /nitro.pcrs \
+    --output /nitro.eif \
+    --cmdline 'reboot=k initrd=0x2000000,3228672 root=/dev/ram0 panic=1 pci=off nomodules console=ttyS0 i8042.noaux i8042.nomux i8042.nopnp i8042.dumbkbd'
 
 FROM base as install
 WORKDIR /rootfs
