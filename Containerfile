@@ -54,6 +54,10 @@ COPY --from=user-linux-nitro /linux.config .
 FROM base as build
 COPY . .
 
+# Install nightly Rust toolchain to enable unstable features
+RUN rustup toolchain install nightly-x86_64-unknown-linux-musl --component rust-std
+ENV RUSTUP_TOOLCHAIN=nightly-x86_64-unknown-linux-musl
+
 RUN cargo build --workspace --locked --no-default-features --release --target x86_64-unknown-linux-musl
 
 WORKDIR /src/nautilus-server
@@ -95,12 +99,12 @@ EOF
 
 WORKDIR /build_eif
 RUN eif_build \
-	--kernel /bzImage \
-	--kernel_config /linux.config \
-	--ramdisk /build_cpio/rootfs.cpio \
-	--pcrs_output /nitro.pcrs \
-	--output /nitro.eif \
-	--cmdline 'reboot=k initrd=0x2000000,3228672 root=/dev/ram0 panic=1 pci=off nomodules console=ttyS0 i8042.noaux i8042.nomux i8042.nopnp i8042.dumbkbd'
+    --kernel /bzImage \
+    --kernel_config /linux.config \
+    --ramdisk /build_cpio/rootfs.cpio \
+    --pcrs_output /nitro.pcrs \
+    --output /nitro.eif \
+    --cmdline 'reboot=k initrd=0x2000000,3228672 root=/dev/ram0 panic=1 pci=off nomodules console=ttyS0 i8042.noaux i8042.nomux i8042.nopnp i8042.dumbkbd'
 
 FROM base as install
 WORKDIR /rootfs
