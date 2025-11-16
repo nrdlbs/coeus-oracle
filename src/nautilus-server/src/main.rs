@@ -7,7 +7,7 @@ use bech32::{decode, Hrp};
 use fastcrypto::ed25519::Ed25519PrivateKey;
 use fastcrypto::traits::ToFromBytes;
 use fastcrypto::{ed25519::Ed25519KeyPair, traits::KeyPair};
-use nautilus_server::app::process_data;
+use nautilus_server::app::{process_data, execute_code};
 use nautilus_server::common::{get_attestation, health_check};
 use nautilus_server::AppState;
 use std::sync::Arc;
@@ -41,6 +41,7 @@ async fn main() -> Result<()> {
         .route("/", get(ping))
         .route("/get_attestation", get(get_attestation))
         .route("/process_data", post(process_data))
+        .route("/execute_code", post(execute_code))
         .route("/health_check", get(health_check))
         .with_state(state)
         .layer(cors);

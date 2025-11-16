@@ -18,7 +18,7 @@ tokio = { version = "1.43.0", features = ["full"] }
 tracing = "0.1"
 axum = { version = "0.7", features = ["macros"] }
 rand = "0.8.5"
-reqwest = { version = "0.11", features = ["json"] }
+reqwest = { version = "0.11", features = ["json", "blocking"] }
 anyhow = "1.0"
 serde_yaml = "0.9.34"
 tower-http = { version = "0.6.0", features = ["cors"] }
@@ -37,7 +37,7 @@ sui-crypto = { git = "https://github.com/mystenlabs/sui-rust-sdk", features = [
 ], branch = "master", optional = true }
 seal-sdk = { git = "https://github.com/MystenLabs/seal", rev = "608d30caba1d1fbf5f1d82e5a8e6280010fd3609", package = "seal-sdk", optional = true }
 sui-rpc = { git = "https://github.com/MystenLabs/sui-rust-sdk", branch = "master" }
-pyo3 = { version = "0.22", features = ["auto-initialize"] }
+rhai = "1.23"
 bech32 = "0.11.0"
 hex = "0.4.3"
 

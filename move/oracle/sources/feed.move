@@ -35,7 +35,7 @@ const EInvalidResult: vector<u8> = b"Invalid result";
 const EInvalidReceipt: vector<u8> = b"Invalid receipt";
 
 public enum CodeExtension has store {
-    PYTHON,
+    RHAI,
 }
 
 public enum ReturnType has copy, drop, store {
@@ -139,7 +139,7 @@ public fun construct_vector_result(result: vector<u8>): Result {
 
 public fun construct_code_extension(extension: vector<u8>): CodeExtension {
     match (extension) {
-        b"python" => CodeExtension::PYTHON,
+        b"rhai" => CodeExtension::RHAI,
         _ => abort EInvalidCodeExtension,
     }
 }
