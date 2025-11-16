@@ -54,9 +54,8 @@ COPY --from=user-linux-nitro /linux.config .
 FROM base as build
 COPY . .
 
-# Install nightly Rust toolchain to enable unstable features
-RUN rustup toolchain install nightly-x86_64-unknown-linux-musl --component rust-std
-ENV RUSTUP_TOOLCHAIN=nightly-x86_64-unknown-linux-musl
+# Enable unstable features on stable Rust (faster than installing nightly)
+ENV RUSTC_BOOTSTRAP=1
 
 RUN cargo build --workspace --locked --no-default-features --release --target x86_64-unknown-linux-musl
 
