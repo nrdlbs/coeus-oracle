@@ -23,7 +23,7 @@ busybox ip link set dev lo up
 # Add a hosts record, pointing target site calls to local loopback
 echo "127.0.0.1   localhost" > /etc/hosts
 echo "127.0.0.64   api.weatherapi.com" >> /etc/hosts
-echo "127.0.0.65   https://api.coingecko.com" >> /etc/hosts
+echo "127.0.0.65   api.coingecko.com" >> /etc/hosts
 
 
 
