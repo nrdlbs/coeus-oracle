@@ -26,10 +26,11 @@ echo "127.0.0.64   api.weatherapi.com" >> /etc/hosts
 echo "127.0.0.65   api.coingecko.com" >> /etc/hosts
 echo "127.0.0.66   fullnode.testnet.sui.io" >> /etc/hosts
 echo "127.0.0.67   aggregator.walrus-testnet.walrus.space" >> /etc/hosts
-echo "127.0.0.68   walrus-testnet-aggregator.nodes.guru" >> /etc/hosts
+echo "127.0.0.68   walrus-testnet-aggregator.nodes.guru," >> /etc/hosts
 echo "127.0.0.69   walrus-testnet-aggregator.stakin-nodes.com" >> /etc/hosts
 echo "127.0.0.70   sui-walrus-tn-aggregator.bwarelabs.com" >> /etc/hosts
 echo "127.0.0.71   walrus-testnet-aggregator.chainflow.io" >> /etc/hosts
+
 
 
 
@@ -55,6 +56,12 @@ echo "$JSON_RESPONSE" | jq -r 'to_entries[] | "\(.key)=\(.value)"' > /tmp/kvpair
 python3 /traffic_forwarder.py 127.0.0.64 443 3 8101 &
 python3 /traffic_forwarder.py 127.0.0.65 443 3 8102 &
 python3 /traffic_forwarder.py 127.0.0.66 443 3 8103 &
+python3 /traffic_forwarder.py 127.0.0.67 443 3 8104 &
+python3 /traffic_forwarder.py 127.0.0.68 443 3 8105 &
+python3 /traffic_forwarder.py 127.0.0.69 443 3 8106 &
+python3 /traffic_forwarder.py 127.0.0.70 443 3 8107 &
+python3 /traffic_forwarder.py 127.0.0.71 443 3 8108 &
+
 
 
 
