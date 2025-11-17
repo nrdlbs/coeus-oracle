@@ -24,6 +24,7 @@ busybox ip link set dev lo up
 echo "127.0.0.1   localhost" > /etc/hosts
 echo "127.0.0.64   api.weatherapi.com" >> /etc/hosts
 echo "127.0.0.65   api.coingecko.com" >> /etc/hosts
+echo "127.0.0.66   fullnode.testnet.sui.io" >> /etc/hosts
 
 
 
