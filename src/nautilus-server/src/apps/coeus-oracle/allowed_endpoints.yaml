@@ -3,3 +3,8 @@ endpoints:
   - api.weatherapi.com # replace with your own endpoints
   - api.coingecko.com
   - fullnode.testnet.sui.io
+  - aggregator.walrus-testnet.walrus.space
+  - walrus-testnet-aggregator.nodes.guru,
+  - walrus-testnet-aggregator.stakin-nodes.com
+  - sui-walrus-tn-aggregator.bwarelabs.com
+  - walrus-testnet-aggregator.chainflow.io
