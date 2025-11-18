@@ -12,6 +12,9 @@ use enclave::enclave::Enclave;
 use oracle::config::Config;
 use std::string::String;
 use sui::clock::Clock;
+use std::bcs;
+use sui::ed25519;
+use std::debug;
 
 #[error]
 const EInvalidSignature: vector<u8> = b"Invalid signature";
@@ -100,9 +103,9 @@ public fun submit_result<T>(
     config: &Config,
     enclave: &Enclave<T>,
     payload: Payload,
-    signature: &vector<u8>,
+    signature: vector<u8>,
     feed: &mut OracleFeed,
-    clock: &mut Clock,
+    clock: &Clock,
 ) {
     assert!(
         clock.timestamp_ms() - payload.timestamp_ms <= config.get_max_update_time_ms(),
@@ -110,12 +113,12 @@ public fun submit_result<T>(
     );
     assert!(clock.timestamp_ms() >= feed.allow_update_timestamp_ms, EInvalidAllowUpdateTimestamp);
     assert!(payload.result.is_some(), EInvalidResult);
-    assert!(feed.result.is_some(), EInvalidResult);
+    assert!(feed.result.is_none(), EInvalidResult);
     let verify_result = enclave.verify_signature<T, Payload>(
         payload.intent_scope,
         payload.timestamp_ms,
         payload,
-        signature,
+        &signature,
     );
     assert!(verify_result, EInvalidSignature);
     feed.result = payload.result;
@@ -212,4 +215,29 @@ public fun is_vector_result_type(return_type: ReturnType): bool {
 
 public fun return_type(feed: &OracleFeed): ReturnType {
     feed.return_type
+}
+
+#[test]
+fun test_signing_payload() {
+    let payload = Payload {
+        intent_scope: 0,
+        timestamp_ms: 1744038900000,
+        result: option::some(Result::NUMBER(1)),
+    };
+    let signing_payload = bcs::to_bytes(&payload);
+    assert!(signing_payload == b"0x0020b1d11096010000020100000000000000");
+}
+
+#[test]
+fun test_verify_signature() {
+    let payload = Payload {
+        intent_scope: 0,
+        timestamp_ms: 1744038900000,
+        result: option::some(Result::NUMBER(1)),
+    };
+    let signing_payload = bcs::to_bytes(&payload);
+    let signature = b"df6f8dd7630f3abac24a5ffd24545a2d878d7cc2be03c6ae0e3779ee9432d74fcf2b2ec725023aac5c3125eb1d1300b222c7396feee039f66eec25f9651d2f05";
+    let public_key = b"b1d11096010000020100000000000000";
+    let verify_result = ed25519::ed25519_verify(&signature, &public_key, &signing_payload);
+    assert!(verify_result);
 }

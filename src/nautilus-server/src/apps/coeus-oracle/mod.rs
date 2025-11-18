@@ -7,6 +7,7 @@ use crate::common::IntentMessage;
 use crate::common::{IntentScope, ProcessedDataResponse, to_signed_response};
 use axum::Json;
 use axum::extract::State;
+use fastcrypto::encoding::{Encoding, Hex};
 use reqwest::Url;
 use rhai::packages::Package;
 use rhai::{Dynamic, Engine, EvalAltResult, Scope};
@@ -24,7 +25,7 @@ use sui_sdk_types::Address;
 /// Inner type T for IntentMessage<T>
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UpdateOracleResponse {
-    pub result: ResultValue,
+    pub result: Option<ResultValue>,
 }
 
 /// Inner type T for ProcessDataRequest<T>
@@ -95,14 +96,12 @@ fn http_get_string(url: &str) -> Result<String, String> {
             if !status.is_success() {
                 return Err(format!("HTTP error: status {}", status));
             }
-            
+
             match resp.text() {
-                Ok(text) => {
-                    Ok(text)
-                },
+                Ok(text) => Ok(text),
                 Err(e) => Err(format!("Read error: {}", e)),
             }
-        },
+        }
         Err(e) => Err(format!("Request error: {}", e)),
     }
 }
@@ -113,7 +112,7 @@ fn http_get_json(url: &str) -> String {
     match http_get_string(url) {
         Ok(text) => {
             let trimmed = text.trim();
-            
+
             // Log for debugging (first 200 chars)
             let preview = if trimmed.len() > 200 {
                 format!("{}...", &trimmed[..200])
@@ -121,13 +120,13 @@ fn http_get_json(url: &str) -> String {
                 trimmed.to_string()
             };
             eprintln!("[http_get_json] Response preview: {}", preview);
-            
+
             // Validate that response looks like JSON (starts with { or [)
             if trimmed.is_empty() {
                 eprintln!("[http_get_json] Empty response from {}", url);
                 return format!("Error: Empty response from {}", url);
             }
-            
+
             if !trimmed.starts_with('{') && !trimmed.starts_with('[') {
                 // Response is not JSON, might be HTML error page
                 eprintln!("[http_get_json] Non-JSON response from {}", url);
@@ -138,23 +137,23 @@ fn http_get_json(url: &str) -> String {
                 };
                 return format!("Error: Non-JSON response from {}: {}", url, preview);
             }
-            
+
             // Validate JSON syntax
             match serde_json::from_str::<JsonValue>(trimmed) {
                 Ok(_) => {
                     eprintln!("[http_get_json] Valid JSON received");
                     text // Valid JSON, return original text
-                },
+                }
                 Err(e) => {
                     eprintln!("[http_get_json] JSON parse error: {}", e);
                     format!("Error: Invalid JSON from {}: {}", url, e)
-                },
+                }
             }
-        },
+        }
         Err(e) => {
             eprintln!("[http_get_json] HTTP error: {}", e);
             format!("Error: {}", e)
-        },
+        }
     }
 }
 
@@ -279,13 +278,13 @@ fn fetch_json(url: &str) -> Dynamic {
                 Ok(v) => {
                     eprintln!("[fetch_json] JSON parsed successfully");
                     json_value_to_dynamic(&v)
-                },
+                }
                 Err(e) => {
                     eprintln!("[fetch_json] JSON parse error: {}", e);
                     Dynamic::from(format!("Error: Invalid JSON: {}", e))
                 }
             }
-        },
+        }
         Err(e) => {
             eprintln!("[fetch_json] HTTP error: {}", e);
             Dynamic::from(format!("Error: {}", e))
@@ -373,7 +372,7 @@ fn setup_rhai_engine() -> Engine {
     // Try to extract the actual value from Result<String, String>
     engine.register_fn("unwrap_string", |result: &mut Dynamic| -> String {
         let result_str = result.to_string();
-        
+
         // Check if it's an error
         if result_str.starts_with("Err(") || result_str.starts_with("Error:") {
             let err_msg = if result_str.starts_with("Err(") {
@@ -386,7 +385,7 @@ fn setup_rhai_engine() -> Engine {
             };
             return format!("Error: {}", err_msg);
         }
-        
+
         // Try to extract from "Ok(...)" format
         if result_str.starts_with("Ok(") {
             let value = result_str
@@ -397,12 +396,12 @@ fn setup_rhai_engine() -> Engine {
             let value = value.trim_matches('"').to_string();
             return value;
         }
-        
+
         // If it doesn't match Ok/Err pattern, try to extract string directly
         if let Ok(s) = result.clone().into_string() {
             return s;
         }
-        
+
         // Last resort: return as string
         result_str
     });
@@ -538,7 +537,7 @@ pub async fn execute_rhai_code_async(
     // This is critical because http_get_string uses reqwest::blocking::get()
     // We use std::thread and convert Dynamic to a Send-safe type before sending
     let (tx, rx) = tokio::sync::oneshot::channel();
-    
+
     std::thread::spawn(move || {
         // Create engine inside the blocking thread
         let mut engine = Engine::new();
@@ -636,7 +635,7 @@ pub async fn execute_rhai_code_async(
         engine.register_fn("unwrap_string", |result: &mut Dynamic| -> String {
             // First, try to get the string representation
             let result_str = result.to_string();
-            
+
             // Check if it's an error
             if result_str.starts_with("Err(") || result_str.starts_with("Error:") {
                 let err_msg = if result_str.starts_with("Err(") {
@@ -649,7 +648,7 @@ pub async fn execute_rhai_code_async(
                 };
                 return format!("Error: {}", err_msg);
             }
-            
+
             // Try to extract from "Ok(...)" format
             if result_str.starts_with("Ok(") {
                 // Remove "Ok(" prefix and ")" suffix
@@ -661,13 +660,13 @@ pub async fn execute_rhai_code_async(
                 let value = value.trim_matches('"').to_string();
                 return value;
             }
-            
+
             // If it doesn't match Ok/Err pattern, try to extract string directly
             // Result<String, String> might be represented differently
             if let Ok(s) = result.clone().into_string() {
                 return s;
             }
-            
+
             // Last resort: return as string
             result_str
         });
@@ -686,7 +685,7 @@ pub async fn execute_rhai_code_async(
 
         let mut scope = Scope::new();
         let result: Result<Dynamic, Box<EvalAltResult>> = engine.eval_with_scope(&mut scope, &code);
-        
+
         // Convert Dynamic to a Send-safe representation (JSON string)
         // We'll parse it back on the async side
         let sendable_result: Result<String, String> = match result {
@@ -715,7 +714,7 @@ pub async fn execute_rhai_code_async(
             }
             Err(e) => Err(format!("{}", e)),
         };
-        
+
         let _ = tx.send(sendable_result);
     });
 
@@ -739,7 +738,7 @@ pub async fn execute_rhai_code_async(
     // Parse JSON back to Dynamic
     let json_value: JsonValue = serde_json::from_str(&json_str)
         .map_err(|e| EnclaveError::GenericError(format!("Failed to parse result JSON: {}", e)))?;
-    
+
     let result: Result<Dynamic, Box<EvalAltResult>> = Ok(json_value_to_dynamic(&json_value));
 
     match result {
@@ -823,21 +822,21 @@ pub async fn process_data(
     println!("body: {:?}", body);
 
     // Execute Rhai script if the extension is RHAI
-    let rhai_result = if oracle_feed.extension == CodeExtension::RHAI {
+    // If error when execute/run code/pull api -> result is None
+    // If have result in correct format -> Option::Some(result)
+    let result = if oracle_feed.extension == CodeExtension::RHAI {
         // Use async Rhai execution (wrapped in spawn_blocking to avoid blocking async runtime)
-        execute_rhai_code_async(&body, &oracle_feed.return_type).await.map_err(|e| {
-            EnclaveError::GenericError(format!("Failed to execute Rhai code: {}", e))
-        })?
+        // Convert errors to None, keep Ok(Some(result)) or Ok(None) as is
+        execute_rhai_code_async(&body, &oracle_feed.return_type)
+            .await
+            .unwrap_or(None)
     } else {
         return Err(EnclaveError::GenericError(
             "Unsupported code extension".to_string(),
         ));
     };
 
-    // Create response with detected result type
-    let result = rhai_result.ok_or_else(|| {
-        EnclaveError::GenericError("Rhai code execution returned no result".to_string())
-    })?;
+    // Pass Option<ResultValue> directly into to_signed_response
     let update_oracle_response = UpdateOracleResponse { result };
 
     Ok(Json(to_signed_response(
@@ -858,13 +857,11 @@ pub async fn execute_code(
 
     // Execute the Rhai code (wrapped in spawn_blocking to avoid blocking async runtime)
     match execute_rhai_code_async(&request.code, &request.return_type).await {
-        Ok(Some(result)) => {
-            Ok(Json(ExecuteCodeResponse {
-                result,
-                success: true,
-                error: None,
-            }))
-        }
+        Ok(Some(result)) => Ok(Json(ExecuteCodeResponse {
+            result,
+            success: true,
+            error: None,
+        })),
         Ok(None) => {
             Ok(Json(ExecuteCodeResponse {
                 result: ResultValue::STRING("".to_string()), // Default empty result
@@ -884,6 +881,8 @@ pub async fn execute_code(
 
 #[cfg(test)]
 mod test {
+    use fastcrypto::ed25519::Ed25519KeyPair;
+
     use super::*;
 
     #[test]
@@ -1156,5 +1155,31 @@ mod test {
         "#;
         let result = execute_rhai_code(code, &ReturnType::STRING).unwrap();
         assert_eq!(result, Some(ResultValue::STRING("greater".to_string())));
+    }
+
+    #[test]
+    fn test_signing_payload() {
+        let payload = Option::Some(ResultValue::NUMBER(1));
+        let timestamp = 1744038900000;
+        let intent_msg = IntentMessage::new(payload, timestamp, IntentScope::ProcessData);
+        let signing_payload = bcs::to_bytes(&intent_msg).expect("should not fail");
+        println!("signing_payload: {:?}", Hex::encode(&signing_payload));
+        assert!(Hex::encode(&signing_payload) == "0020b1d11096010000020100000000000000");
+    }
+
+    #[test]
+    fn test_signature() {
+        let payload = Option::Some(ResultValue::NUMBER(1));
+        let timestamp = 1744038900000;
+        let intent_msg = IntentMessage::new(payload.clone(), timestamp, IntentScope::ProcessData);
+        let signing_payload = bcs::to_bytes(&intent_msg).expect("should not fail");
+        println!("signing_payload: {:?}", Hex::encode(&signing_payload));
+        assert!(Hex::encode(&signing_payload) == "0020b1d1109601000001020100000000000000");
+
+        use fastcrypto::traits::KeyPair;
+        let eph_kp = Ed25519KeyPair::generate(&mut rand::thread_rng());
+        let signed_response =
+            to_signed_response(&eph_kp, payload, timestamp, IntentScope::ProcessData);
+        println!("signature: {:?}", signed_response.signature);
     }
 }
