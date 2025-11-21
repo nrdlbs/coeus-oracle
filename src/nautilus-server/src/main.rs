@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{Context, Result};
-use axum::{routing::get, routing::post, Router};
-use bech32::{decode, Hrp};
+use axum::{Router, routing::get, routing::post};
+use bech32::{Hrp, decode};
 use fastcrypto::ed25519::Ed25519PrivateKey;
 use fastcrypto::traits::ToFromBytes;
 use fastcrypto::{ed25519::Ed25519KeyPair, traits::KeyPair};
-use nautilus_server::app::{process_data, execute_code};
-use nautilus_server::common::{get_attestation, health_check};
 use nautilus_server::AppState;
+use nautilus_server::app::{execute_code, process_data};
+use nautilus_server::common::{get_attestation, health_check};
 use std::sync::Arc;
 use sui_rpc::client::Client;
 use tower_http::cors::{Any, CorsLayer};
@@ -23,10 +23,7 @@ async fn main() -> Result<()> {
     // If you need real-time data, you can switch back to TESTNET_FULLNODE
     let sui_client = Client::new(Client::TESTNET_FULLNODE).unwrap();
 
-    let state = Arc::new(AppState {
-        eph_kp,
-        sui_client,
-    });
+    let state = Arc::new(AppState { eph_kp, sui_client });
 
     // Spawn host-only init server if seal-example feature is enabled
     #[cfg(feature = "seal-example")]

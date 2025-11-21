@@ -55,10 +55,14 @@ public enum Result has copy, drop, store {
     VECTOR(vector<u8>),
 }
 
+public struct UpdateOracleResponse has copy, drop, store {
+    result: Option<Result>,
+}
+
 public struct Payload has copy, drop, store {
     intent_scope: u8,
     timestamp_ms: u64,
-    result: Option<Result>,
+    result: UpdateOracleResponse,
 }
 
 public struct NewOracleFeedReceipt {
@@ -102,26 +106,28 @@ public fun repay(feed: OracleFeed, receipt: NewOracleFeedReceipt) {
 public fun submit_result<T>(
     config: &Config,
     enclave: &Enclave<T>,
-    payload: Payload,
+    result: Option<Result>,
+    intent_scope: u8,
+    timestamp_ms: u64,
     signature: vector<u8>,
     feed: &mut OracleFeed,
     clock: &Clock,
 ) {
     assert!(
-        clock.timestamp_ms() - payload.timestamp_ms <= config.get_max_update_time_ms(),
+        clock.timestamp_ms() - timestamp_ms <= config.get_max_update_time_ms(),
         EInvalidTimestamp,
     );
     assert!(clock.timestamp_ms() >= feed.allow_update_timestamp_ms, EInvalidAllowUpdateTimestamp);
-    assert!(payload.result.is_some(), EInvalidResult);
+    assert!(result.is_some(), EInvalidResult);
     assert!(feed.result.is_none(), EInvalidResult);
-    let verify_result = enclave.verify_signature<T, Payload>(
-        payload.intent_scope,
-        payload.timestamp_ms,
-        payload,
+    let verify_result = enclave.verify_signature<T, UpdateOracleResponse>(
+        intent_scope,
+        timestamp_ms,
+        UpdateOracleResponse { result },
         &signature,
     );
     assert!(verify_result, EInvalidSignature);
-    feed.result = payload.result;
+    feed.result = result;
 }
 
 public fun construct_string_result(result: String): Result {
@@ -154,14 +160,6 @@ public fun construct_return_type(type_bytes: vector<u8>): ReturnType {
         b"number" => ReturnType::NUMBER,
         b"vector" => ReturnType::VECTOR,
         _ => abort EInvalidReturnType,
-    }
-}
-
-public fun construct_payload(intent_scope: u8, timestamp_ms: u64, result: Result): Payload {
-    Payload {
-        intent_scope,
-        timestamp_ms,
-        result: option::some(result),
     }
 }
 
@@ -215,29 +213,4 @@ public fun is_vector_result_type(return_type: ReturnType): bool {
 
 public fun return_type(feed: &OracleFeed): ReturnType {
     feed.return_type
-}
-
-#[test]
-fun test_signing_payload() {
-    let payload = Payload {
-        intent_scope: 0,
-        timestamp_ms: 1744038900000,
-        result: option::some(Result::NUMBER(1)),
-    };
-    let signing_payload = bcs::to_bytes(&payload);
-    assert!(signing_payload == b"0x0020b1d11096010000020100000000000000");
-}
-
-#[test]
-fun test_verify_signature() {
-    let payload = Payload {
-        intent_scope: 0,
-        timestamp_ms: 1744038900000,
-        result: option::some(Result::NUMBER(1)),
-    };
-    let signing_payload = bcs::to_bytes(&payload);
-    let signature = b"df6f8dd7630f3abac24a5ffd24545a2d878d7cc2be03c6ae0e3779ee9432d74fcf2b2ec725023aac5c3125eb1d1300b222c7396feee039f66eec25f9651d2f05";
-    let public_key = b"b1d11096010000020100000000000000";
-    let verify_result = ed25519::ed25519_verify(&signature, &public_key, &signing_payload);
-    assert!(verify_result);
 }

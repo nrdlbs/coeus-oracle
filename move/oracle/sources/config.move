@@ -16,7 +16,7 @@ public struct Config has key, store {
 fun init(otw: CONFIG, ctx: &mut TxContext) {
     let config = Config {
         id: object::new(ctx),
-        max_update_time_ms: 1000,
+        max_update_time_ms: 5000,
         admin: ctx.sender(),
     };
     let cap = enclave::new_cap(otw, ctx);

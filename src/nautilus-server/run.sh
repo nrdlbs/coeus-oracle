@@ -30,8 +30,7 @@ echo "127.0.0.68   walrus-testnet-aggregator.nodes.guru" >> /etc/hosts
 echo "127.0.0.69   walrus-testnet-aggregator.stakin-nodes.com" >> /etc/hosts
 echo "127.0.0.70   sui-walrus-tn-aggregator.bwarelabs.com" >> /etc/hosts
 echo "127.0.0.71   walrus-testnet-aggregator.chainflow.io" >> /etc/hosts
-
-
+echo "127.0.0.72   financialmodelingprep.com" >> /etc/hosts
 
 
 
