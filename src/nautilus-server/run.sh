@@ -36,6 +36,7 @@ echo "127.0.0.72   financialmodelingprep.com" >> /etc/hosts
 
 
 
+
 # == ATTENTION: code should be generated here that parses allowed_endpoints.yaml and populate domains here ===
 
 cat /etc/hosts
@@ -61,6 +62,8 @@ python3 /traffic_forwarder.py 127.0.0.68 443 3 8105 &
 python3 /traffic_forwarder.py 127.0.0.69 443 3 8106 &
 python3 /traffic_forwarder.py 127.0.0.70 443 3 8107 &
 python3 /traffic_forwarder.py 127.0.0.71 443 3 8108 &
+python3 /traffic_forwarder.py 127.0.0.72 443 3 8109 &
+
 
 
 
